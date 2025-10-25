@@ -1,7 +1,6 @@
 # app.py
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -23,35 +22,48 @@ st.set_page_config(page_title="Customer Purchase Prediction", layout="wide")
 # Title and Description
 # ------------------------------
 st.title("🛒 Customer Purchase Prediction")
-st.markdown("""
-Predict the purchase amount of a customer based on their features.
-""")
+st.markdown("Predict the purchase amount of a customer based on their features.")
+
+# ------------------------------
+# Load dataset for categories
+# ------------------------------
+df = pd.read_csv("customer_data.csv")
+
+# Create dropdowns from dataset to avoid invalid inputs
+gender_options = df['gender'].unique().tolist()
+education_options = df['education'].unique().tolist()
+region_options = df['region'].unique().tolist()
+loyalty_options = df['loyalty_status'].unique().tolist()
+freq_options = df['purchase_frequency'].unique().tolist()
+product_options = df['product_category'].unique().tolist()
 
 # ------------------------------
 # Input Section
 # ------------------------------
 st.sidebar.header("Input Features")
 
-# Numeric features
 age = st.sidebar.number_input("Age", min_value=0, max_value=100, value=30)
 income = st.sidebar.number_input("Income", min_value=0, value=50000)
 promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, value=1)
 satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
 
-# Categorical features
-gender = st.sidebar.selectbox("Gender", ['Male', 'Female', 'Other'])
-education = st.sidebar.selectbox("Education", ['High School', 'Bachelor', 'Master', 'PhD'])
-region = st.sidebar.selectbox("Region", ['North', 'South', 'East', 'West'])
-loyalty_status = st.sidebar.selectbox("Loyalty Status", ['Bronze', 'Silver', 'Gold', 'Platinum'])
-purchase_frequency = st.sidebar.selectbox("Purchase Frequency", ['Low', 'Medium', 'High'])
-product_category = st.sidebar.selectbox("Product Category", ['Books', 'Clothing', 'Food', 'Electronics', 'Home', 'Beauty', 'Health'])
+gender = st.sidebar.selectbox("Gender", gender_options)
+education = st.sidebar.selectbox("Education", education_options)
+region = st.sidebar.selectbox("Region", region_options)
+loyalty_status = st.sidebar.selectbox("Loyalty Status", loyalty_options)
+purchase_frequency = st.sidebar.selectbox("Purchase Frequency", freq_options)
+product_category = st.sidebar.selectbox("Product Category", product_options)
 
 # Prepare input DataFrame
-input_df = pd.DataFrame([[age, gender, income, education, region, loyalty_status, purchase_frequency, promotion_usage, satisfaction_score, product_category]],
-                        columns=['age', 'gender', 'income', 'education', 'region', 'loyalty_status', 'purchase_frequency', 'promotion_usage', 'satisfaction_score', 'product_category'])
+input_df = pd.DataFrame([[age, gender, income, education, region, loyalty_status,
+                          purchase_frequency, promotion_usage, satisfaction_score,
+                          product_category]],
+                        columns=['age', 'gender', 'income', 'education', 'region',
+                                 'loyalty_status', 'purchase_frequency', 'promotion_usage',
+                                 'satisfaction_score', 'product_category'])
 
 # ------------------------------
-# Categorical Encoding
+# Encode categorical features
 # ------------------------------
 encoders = {
     'gender': gender_le,
@@ -62,12 +74,7 @@ encoders = {
     'product_category': prod_cat_le
 }
 
-# Standardize input and transform
 for col, le in encoders.items():
-    input_df[col] = input_df[col].str.title()
-    if input_df[col][0] not in le.classes_:
-        st.error(f" Invalid input for '{col}'. Choose from: {', '.join(le.classes_)}")
-        st.stop()
     input_df[col] = le.transform(input_df[col])
 
 # ------------------------------
@@ -80,10 +87,7 @@ if st.button("Predict Purchase Amount"):
 # ------------------------------
 # Optional Visualizations
 # ------------------------------
-st.subheader("Model Insights")
-
-# Load dataset (small sample for visualization)
-df = pd.read_csv("customer_data.csv")
+st.subheader(" Model Insights")
 
 # Scatter plots
 fig1, ax1 = plt.subplots()
