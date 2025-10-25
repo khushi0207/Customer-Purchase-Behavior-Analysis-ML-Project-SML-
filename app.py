@@ -19,7 +19,7 @@ prod_cat_le = joblib.load("product_category_encoder.pkl")
 st.set_page_config(page_title="Customer Purchase Prediction", layout="wide")
 
 # ------------------------------
-# Load dataset for dropdowns
+# Load dataset
 # ------------------------------
 df = pd.read_csv("customer_data.csv")
 
@@ -33,7 +33,7 @@ income = st.sidebar.number_input("Income", min_value=0, value=50000)
 promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, value=1)
 satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
 
-# Dropdowns using friendly string categories
+# Dropdowns for categorical columns
 gender = st.sidebar.selectbox("Gender", gender_le.classes_)
 education = st.sidebar.selectbox("Education", education_le.classes_)
 region = st.sidebar.selectbox("Region", region_le.classes_)
@@ -51,9 +51,7 @@ input_df = pd.DataFrame([[age, gender, income, education, region, loyalty_status
                                  'loyalty_status', 'purchase_frequency', 'promotion_usage',
                                  'satisfaction_score', 'product_category'])
 
-# ------------------------------
 # Encode categorical features
-# ------------------------------
 encoders = {
     'gender': gender_le,
     'education': education_le,
@@ -74,38 +72,55 @@ if st.button("Predict Purchase Amount"):
     st.success(f"Predicted Purchase Amount: ₹{prediction:.2f}")
 
 # ------------------------------
-# Visualizations
+# Model Insights / Visualizations
 # ------------------------------
-st.subheader(" Model Insights")
+st.subheader("📊 Model Insights")
 
-# Scatter plots
+model_features = ['age', 'gender', 'income', 'education', 'region',
+                  'loyalty_status', 'purchase_frequency', 'promotion_usage',
+                  'satisfaction_score', 'product_category']
+
+# Encode dataset categorical columns for model predictions
+X_df = df[model_features].copy()
+for col, le in encoders.items():
+    X_df[col] = le.transform(X_df[col])
+
+y_true = df["purchase_amount"].values
+y_pred_all = model.predict(X_df)
+residuals = y_true - y_pred_all
+
+# Scatter Plots
 fig1, ax1 = plt.subplots()
-sns.scatterplot(x=df["age"], y=df["purchase_amount"], ax=ax1)
+sns.scatterplot(x=df["age"], y=y_true, ax=ax1)
 ax1.set_title("Age vs Purchase Amount")
 st.pyplot(fig1)
 
 fig2, ax2 = plt.subplots()
-sns.scatterplot(x=df["income"], y=df["purchase_amount"], ax=ax2)
+sns.scatterplot(x=df["income"], y=y_true, ax=ax2)
 ax2.set_title("Income vs Purchase Amount")
 st.pyplot(fig2)
 
+# Predicted vs Actual
+fig3, ax3 = plt.subplots()
+sns.scatterplot(x=y_true, y=y_pred_all, ax=ax3)
+ax3.set_xlabel("Actual Purchase Amount")
+ax3.set_ylabel("Predicted Purchase Amount")
+ax3.set_title("Predicted vs Actual Purchase Amount")
+st.pyplot(fig3)
+
 # Feature Importance
 if hasattr(model, "feature_importances_"):
-    fi = pd.Series(model.feature_importances_, index=input_df.columns)
-    fig3, ax3 = plt.subplots()
-    fi.sort_values().plot(kind='barh', ax=ax3)
-    ax3.set_title("Feature Importance")
-    st.pyplot(fig3)
+    fi = pd.Series(model.feature_importances_, index=model_features)
+    fig4, ax4 = plt.subplots()
+    fi.sort_values().plot(kind="barh", ax=ax4)
+    ax4.set_title("Feature Importance")
+    st.pyplot(fig4)
 
-# Residuals
-y_true = df["purchase_amount"].values
-X_df = df[input_df.columns]
-y_pred_all = model.predict(X_df)
-residuals = y_true - y_pred_all
-fig4, ax4 = plt.subplots()
-sns.histplot(residuals, bins=30, kde=True, ax=ax4)
-ax4.set_title("Residuals Distribution")
-st.pyplot(fig4)
+# Residuals Distribution
+fig5, ax5 = plt.subplots()
+sns.histplot(residuals, bins=30, kde=True, ax=ax5)
+ax5.set_title("Residuals Distribution")
+st.pyplot(fig5)
 
 # ------------------------------
 # Footer
