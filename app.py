@@ -19,20 +19,12 @@ prod_cat_le = joblib.load("product_category_encoder.pkl")
 st.set_page_config(page_title="Customer Purchase Prediction", layout="wide")
 
 # ------------------------------
-# Load dataset for categories
+# Load dataset for dropdowns
 # ------------------------------
 df = pd.read_csv("customer_data.csv")
 
-# Dropdown options from dataset
-gender_options = df['gender'].unique().tolist()
-education_options = df['education'].unique().tolist()
-region_options = df['region'].unique().tolist()
-loyalty_options = df['loyalty_status'].unique().tolist()
-freq_options = df['purchase_frequency'].unique().tolist()
-product_options = df['product_category'].unique().tolist()
-
 # ------------------------------
-# Input Section
+# Sidebar Inputs
 # ------------------------------
 st.sidebar.header("Input Features")
 
@@ -41,14 +33,17 @@ income = st.sidebar.number_input("Income", min_value=0, value=50000)
 promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, value=1)
 satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
 
-gender = st.sidebar.selectbox("Gender", gender_options)
-education = st.sidebar.selectbox("Education", education_options)
-region = st.sidebar.selectbox("Region", region_options)
-loyalty_status = st.sidebar.selectbox("Loyalty Status", loyalty_options)
-purchase_frequency = st.sidebar.selectbox("Purchase Frequency", freq_options)
-product_category = st.sidebar.selectbox("Product Category", product_options)
+# Dropdowns using friendly string categories
+gender = st.sidebar.selectbox("Gender", gender_le.classes_)
+education = st.sidebar.selectbox("Education", education_le.classes_)
+region = st.sidebar.selectbox("Region", region_le.classes_)
+loyalty_status = st.sidebar.selectbox("Loyalty Status", loyalty_le.classes_)
+purchase_frequency = st.sidebar.selectbox("Purchase Frequency", freq_le.classes_)
+product_category = st.sidebar.selectbox("Product Category", prod_cat_le.classes_)
 
+# ------------------------------
 # Prepare input DataFrame
+# ------------------------------
 input_df = pd.DataFrame([[age, gender, income, education, region, loyalty_status,
                           purchase_frequency, promotion_usage, satisfaction_score,
                           product_category]],
@@ -57,7 +52,7 @@ input_df = pd.DataFrame([[age, gender, income, education, region, loyalty_status
                                  'satisfaction_score', 'product_category'])
 
 # ------------------------------
-# Encode categorical features safely
+# Encode categorical features
 # ------------------------------
 encoders = {
     'gender': gender_le,
@@ -69,11 +64,7 @@ encoders = {
 }
 
 for col, le in encoders.items():
-    val = str(input_df[col].values[0]).title()  # normalize string
-    if val not in le.classes_:
-        st.error(f"⚠️ Invalid input for '{col}'. Choose from: {', '.join(map(str, le.classes_))}")
-        st.stop()
-    input_df[col] = le.transform([val])[0]  # single value transform
+    input_df[col] = le.transform(input_df[col])
 
 # ------------------------------
 # Prediction
@@ -83,9 +74,9 @@ if st.button("Predict Purchase Amount"):
     st.success(f"Predicted Purchase Amount: ₹{prediction:.2f}")
 
 # ------------------------------
-# Optional Visualizations
+# Visualizations
 # ------------------------------
-st.subheader("📊 Model Insights")
+st.subheader(" Model Insights")
 
 # Scatter plots
 fig1, ax1 = plt.subplots()
