@@ -54,12 +54,13 @@ income = st.sidebar.number_input("Income (₹)", min_value=0, value=50000)
 promotion_usage_input = st.sidebar.selectbox("Promotion Usage", ["Yes", "No"])
 satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
 
-gender_input = st.sidebar.selectbox("Gender", gender_le.classes_)
-education_input = st.sidebar.selectbox("Education", education_le.classes_)
-region_input = st.sidebar.selectbox("Region", region_le.classes_)
-loyalty_input = st.sidebar.selectbox("Loyalty Status", loyalty_le.classes_)
-freq_input = st.sidebar.selectbox("Purchase Frequency", freq_le.classes_)
-prod_cat_input = st.sidebar.selectbox("Product Category", prod_cat_le.classes_)
+
+gender_input = st.sidebar.selectbox("Gender", list(gender_le.classes_))
+education_input = st.sidebar.selectbox("Education Level", list(education_le.classes_))
+region_input = st.sidebar.selectbox("Region", list(region_le.classes_))
+loyalty_input = st.sidebar.selectbox("Loyalty Status", list(loyalty_le.classes_))
+freq_input = st.sidebar.selectbox("Purchase Frequency", list(freq_le.classes_))
+prod_cat_input = st.sidebar.selectbox("Product Category", list(prod_cat_le.classes_))
 
 # Convert Promotion Usage to numeric (1 = Yes, 0 = No)
 promotion_usage = 1 if promotion_usage_input == "Yes" else 0
