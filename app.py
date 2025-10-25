@@ -44,10 +44,14 @@ st.markdown("Predict the purchase amount of a customer based on their features."
 # ------------------------------
 st.sidebar.header("Input Features")
 
-age = st.sidebar.number_input("Age", min_value=0, max_value=100, value=30)
-income = st.sidebar.number_input("Income", min_value=0, value=50000)
-promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, value=1)
-satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
+
+#promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, value=1)
+
+promotion_usage = st.sidebar.number_input( "Promotion Usage",min_value=int(df.promotion_usage.min()),max_value=int(df.promotion_usage.max()),value=int(df.promotion_usage.median()))
+age = st.sidebar.number_input("Age", int(df.age.min()), int(df.age.max()), int(df.age.mean()))
+income = st.sidebar.number_input("Income", int(df.income.min()), int(df.income.max()), int(df.income.mean()))
+satisfaction_score = st.sidebar.slider("Satisfaction Score", int(df.satisfaction_score.min()), int(df.satisfaction_score.max()), int(df.satisfaction_score.mean()))
+
 
 # Dropdowns using friendly names
 gender = st.sidebar.selectbox("Gender", ["Male", "Female"])
