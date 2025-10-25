@@ -4,6 +4,7 @@ import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 # ------------------------------
 # Load Model and Encoders
@@ -33,13 +34,13 @@ income = st.sidebar.number_input("Income", min_value=0, value=50000)
 promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, value=1)
 satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
 
-# Dropdowns for categorical columns
-gender = st.sidebar.selectbox("Gender", gender_le.classes_)
-education = st.sidebar.selectbox("Education", education_le.classes_)
-region = st.sidebar.selectbox("Region", region_le.classes_)
-loyalty_status = st.sidebar.selectbox("Loyalty Status", loyalty_le.classes_)
-purchase_frequency = st.sidebar.selectbox("Purchase Frequency", freq_le.classes_)
-product_category = st.sidebar.selectbox("Product Category", prod_cat_le.classes_)
+# Friendly string options
+gender = st.sidebar.selectbox("Gender", ["Male", "Female"])
+education = st.sidebar.selectbox("Education", df['education'].unique())
+region = st.sidebar.selectbox("Region", df['region'].unique())
+loyalty_status = st.sidebar.selectbox("Loyalty Status", df['loyalty_status'].unique())
+purchase_frequency = st.sidebar.selectbox("Purchase Frequency", df['purchase_frequency'].unique())
+product_category = st.sidebar.selectbox("Product Category", df['product_category'].unique())
 
 # ------------------------------
 # Prepare input DataFrame
@@ -51,7 +52,9 @@ input_df = pd.DataFrame([[age, gender, income, education, region, loyalty_status
                                  'loyalty_status', 'purchase_frequency', 'promotion_usage',
                                  'satisfaction_score', 'product_category'])
 
-# Encode categorical features
+# ------------------------------
+# Encode categorical features safely
+# ------------------------------
 encoders = {
     'gender': gender_le,
     'education': education_le,
@@ -62,7 +65,11 @@ encoders = {
 }
 
 for col, le in encoders.items():
-    input_df[col] = le.transform(input_df[col])
+    try:
+        input_df[col] = le.transform(input_df[col])
+    except ValueError:
+        st.error(f"Invalid input for '{col}'. Choose from: {', '.join(le.classes_)}")
+        st.stop()
 
 # ------------------------------
 # Prediction
@@ -72,7 +79,7 @@ if st.button("Predict Purchase Amount"):
     st.success(f"Predicted Purchase Amount: ₹{prediction:.2f}")
 
 # ------------------------------
-# Model Insights / Visualizations
+# Visualizations
 # ------------------------------
 st.subheader("📊 Model Insights")
 
@@ -80,10 +87,10 @@ model_features = ['age', 'gender', 'income', 'education', 'region',
                   'loyalty_status', 'purchase_frequency', 'promotion_usage',
                   'satisfaction_score', 'product_category']
 
-# Encode dataset categorical columns for model predictions
+# Encode dataset categorical columns for predictions
 X_df = df[model_features].copy()
 for col, le in encoders.items():
-    X_df[col] = le.transform(X_df[col])
+    X_df[col] = le.transform(X_df[col].astype(str))
 
 y_true = df["purchase_amount"].values
 y_pred_all = model.predict(X_df)
