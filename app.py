@@ -31,7 +31,8 @@ st.sidebar.header("Input Features")
 # Example: replace these with your actual features
 feature1 = st.sidebar.number_input("Feature 1", min_value=0, value=10)
 feature2 = st.sidebar.number_input("Feature 2", min_value=0, value=5)
-feature3 = st.sidebar.selectbox("Feature 3 (Category)", ["A", "B", "C"])
+feature3 = st.sidebar.selectbox("Feature 3 (Category)", ['Books', 'Clothing', 'Food', 'Electronics', 'Home', 'Beauty',
+       'Health'])
 
 # Prepare input for model
 input_df = pd.DataFrame([[feature1, feature2, feature3]], columns=["feature1","feature2","feature3"])
@@ -52,7 +53,7 @@ if st.button("Predict Purchase Amount"):
 st.subheader("📊 Model Insights")
 
 # Load dataset (optional: small sample for visualization)
-df = pd.read_csv("your_dataset.csv")  # replace with your dataset path
+df = pd.read_csv("customer_data.csv")  # replace with your dataset path
 
 # Scatter plot: Feature1 vs Purchase Amount
 fig1, ax1 = plt.subplots()
