@@ -6,7 +6,7 @@ import numpy as np
 # ------------------------------------------------------------
 # Load Model & Encoders
 # ------------------------------------------------------------
-model = pickle.load(open("best_model.pkl", "rb"))
+model = pickle.load(open("xgb_purchase_model.pkl.pkl", "rb"))
 gender_le = pickle.load(open("gender_encoder.pkl", "rb"))
 education_le = pickle.load(open("education_encoder.pkl", "rb"))
 region_le = pickle.load(open("region_encoder.pkl", "rb"))
