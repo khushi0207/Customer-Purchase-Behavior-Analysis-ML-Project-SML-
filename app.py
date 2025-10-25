@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -12,7 +13,7 @@ import os
 st.set_page_config(page_title="🛍️ Customer Purchase Prediction", layout="wide")
 
 st.title("🧠 Customer Purchase Behavior Prediction")
-st.markdown("Predict the **purchase amount** based on customer demographics and shopping preferences.")
+st.markdown("Predict the **purchase amount** based on customer demographics and preferences.")
 
 # ------------------------------
 # Check for Required Files
@@ -53,54 +54,66 @@ income = st.sidebar.number_input("Income (₹)", min_value=0, value=50000)
 promotion_usage_input = st.sidebar.selectbox("Promotion Usage", ["Yes", "No"])
 satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
 
-gender_input = st.sidebar.selectbox("Gender", ["Male", "Female"])
+gender_input = st.sidebar.selectbox("Gender", gender_le.classes_)
 education_input = st.sidebar.selectbox("Education", education_le.classes_)
 region_input = st.sidebar.selectbox("Region", region_le.classes_)
 loyalty_input = st.sidebar.selectbox("Loyalty Status", loyalty_le.classes_)
 freq_input = st.sidebar.selectbox("Purchase Frequency", freq_le.classes_)
 prod_cat_input = st.sidebar.selectbox("Product Category", prod_cat_le.classes_)
 
-# Convert Yes/No to numeric
+# Convert Promotion Usage to numeric (1 = Yes, 0 = No)
 promotion_usage = 1 if promotion_usage_input == "Yes" else 0
 
 # ------------------------------
 # Encode Inputs Safely
 # ------------------------------
+def safe_encode(encoder, value):
+    """Safely encode a categorical value."""
+    try:
+        # convert NumPy str_ to normal string
+        if isinstance(value, np.str_):
+            value = str(value)
+        encoded_value = int(encoder.transform([value])[0])
+    except Exception:
+        st.error(f"⚠️ Value '{value}' not found in encoder classes: {encoder.classes_}")
+        st.stop()
+    return encoded_value
+
 try:
     input_data = {
         "age": [age],
-        "gender": [gender_le.transform([gender_input])[0]],
+        "gender": [safe_encode(gender_le, gender_input)],
         "income": [income],
-        "education": [education_le.transform([education_input])[0]],
-        "region": [region_le.transform([region_input])[0]],
-        "loyalty_status": [loyalty_le.transform([loyalty_input])[0]],
-        "purchase_frequency": [freq_le.transform([freq_input])[0]],
+        "education": [safe_encode(education_le, education_input)],
+        "region": [safe_encode(region_le, region_input)],
+        "loyalty_status": [safe_encode(loyalty_le, loyalty_input)],
+        "purchase_frequency": [safe_encode(freq_le, freq_input)],
         "promotion_usage": [promotion_usage],
         "satisfaction_score": [satisfaction_score],
-        "product_category": [prod_cat_le.transform([prod_cat_input])[0]],
+        "product_category": [safe_encode(prod_cat_le, prod_cat_input)],
     }
 
     input_df = pd.DataFrame(input_data)
 
-except ValueError as e:
-    st.error(f"⚠️ Invalid input detected: {e}")
+except Exception as e:
+    st.error(f"⚠️ Encoding Error: {e}")
     st.stop()
 
 # ------------------------------
-# Prediction Section
+# Prediction
 # ------------------------------
 if st.button("🎯 Predict Purchase Amount"):
     prediction = model.predict(input_df)[0]
     st.success(f"💰 **Predicted Purchase Amount:** ₹{prediction:.2f}")
 
 # ------------------------------
-# Visualizations (if dataset available)
+# Visualizations (optional)
 # ------------------------------
 if os.path.exists("customer_data.csv"):
     df = pd.read_csv("customer_data.csv")
 
     if not df.empty and "purchase_amount" in df.columns:
-        st.subheader("📊 Model Insights & Visualizations")
+        st.subheader("📊 Model Insights")
 
         col1, col2 = st.columns(2)
 
