@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import joblib
@@ -45,7 +44,7 @@ freq_le = joblib.load("purchase_frequency_encoder.pkl")
 prod_cat_le = joblib.load("product_category_encoder.pkl")
 
 # ------------------------------
-# Sidebar Inputs
+# Sidebar Inputs (User-Friendly)
 # ------------------------------
 st.sidebar.header("🎛️ Input Customer Details")
 
@@ -53,7 +52,6 @@ age = st.sidebar.number_input("Age", min_value=0, max_value=100, value=30)
 income = st.sidebar.number_input("Income (₹)", min_value=0, value=50000)
 promotion_usage_input = st.sidebar.selectbox("Promotion Usage", ["Yes", "No"])
 satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
-
 
 gender_input = st.sidebar.selectbox("Gender", list(gender_le.classes_))
 education_input = st.sidebar.selectbox("Education Level", list(education_le.classes_))
@@ -66,49 +64,57 @@ prod_cat_input = st.sidebar.selectbox("Product Category", list(prod_cat_le.class
 promotion_usage = 1 if promotion_usage_input == "Yes" else 0
 
 # ------------------------------
-# Encode Inputs Safely
+# Helper Function for Encoding
 # ------------------------------
 def safe_encode(encoder, value):
-    """Safely encode a categorical value."""
+    """Safely encode user input using LabelEncoder."""
     try:
-        # convert NumPy str_ to normal string
         if isinstance(value, np.str_):
             value = str(value)
-        encoded_value = int(encoder.transform([value])[0])
+        return int(encoder.transform([value])[0])
     except Exception:
-        st.error(f"⚠️ Value '{value}' not found in encoder classes: {encoder.classes_}")
+        st.error(f"⚠️ '{value}' is not a valid option. Choose from: {', '.join(encoder.classes_)}")
         st.stop()
-    return encoded_value
 
-try:
-    input_data = {
-        "age": [age],
-        "gender": [safe_encode(gender_le, gender_input)],
-        "income": [income],
-        "education": [safe_encode(education_le, education_input)],
-        "region": [safe_encode(region_le, region_input)],
-        "loyalty_status": [safe_encode(loyalty_le, loyalty_input)],
-        "purchase_frequency": [safe_encode(freq_le, freq_input)],
-        "promotion_usage": [promotion_usage],
-        "satisfaction_score": [satisfaction_score],
-        "product_category": [safe_encode(prod_cat_le, prod_cat_input)],
-    }
-
-    input_df = pd.DataFrame(input_data)
-
-except Exception as e:
-    st.error(f"⚠️ Encoding Error: {e}")
-    st.stop()
+# ------------------------------
+# Prepare Input Data
+# ------------------------------
+input_df = pd.DataFrame({
+    "age": [age],
+    "gender": [safe_encode(gender_le, gender_input)],
+    "income": [income],
+    "education": [safe_encode(education_le, education_input)],
+    "region": [safe_encode(region_le, region_input)],
+    "loyalty_status": [safe_encode(loyalty_le, loyalty_input)],
+    "purchase_frequency": [safe_encode(freq_le, freq_input)],
+    "promotion_usage": [promotion_usage],
+    "satisfaction_score": [satisfaction_score],
+    "product_category": [safe_encode(prod_cat_le, prod_cat_input)],
+})
 
 # ------------------------------
 # Prediction
 # ------------------------------
 if st.button("🎯 Predict Purchase Amount"):
     prediction = model.predict(input_df)[0]
+
     st.success(f"💰 **Predicted Purchase Amount:** ₹{prediction:.2f}")
 
+    # Display a friendly summary
+    st.markdown("### 🧍 Customer Persona Summary")
+    st.info(f"""
+    **Gender:** {gender_input}  
+    **Age:** {age}  
+    **Region:** {region_input}  
+    **Education:** {education_input}  
+    **Loyalty Status:** {loyalty_input}  
+    **Purchase Frequency:** {freq_input}  
+    **Promotion Usage:** {promotion_usage_input}  
+    **Satisfaction Score:** {satisfaction_score}/10  
+    """)
+
 # ------------------------------
-# Visualizations (optional)
+# Visualization Section (Optional)
 # ------------------------------
 if os.path.exists("customer_data.csv"):
     df = pd.read_csv("customer_data.csv")
@@ -138,12 +144,12 @@ if os.path.exists("customer_data.csv"):
             ax3.set_title("Feature Importance")
             st.pyplot(fig3)
     else:
-        st.warning(" Dataset found but missing 'purchase_amount' column.")
+        st.warning("⚠️ Dataset found but missing 'purchase_amount' column.")
 else:
-    st.info(" Dataset not found. Visualizations skipped.")
+    st.info("ℹ️ Dataset not found. Visualizations skipped.")
 
 # ------------------------------
 # Footer
 # ------------------------------
 st.markdown("---")
-st.markdown("Developed by Khushi Yadav")
+st.markdown("👩🏻‍💻 **Developed by Khushi Yadav** | Data Science Enthusiast 🌸")
