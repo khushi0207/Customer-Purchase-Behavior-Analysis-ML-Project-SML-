@@ -1,119 +1,81 @@
-# app.py
 import streamlit as st
 import pandas as pd
-import joblib
-import matplotlib.pyplot as plt
-import seaborn as sns
+import pickle
+import numpy as np
 
-# ------------------------------
-# Load Model and Encoders
-# ------------------------------
-model = joblib.load("xgb_purchase_model.pkl")
+# ------------------------------------------------------------
+# Load Model & Encoders
+# ------------------------------------------------------------
+model = pickle.load(open("best_model.pkl", "rb"))
+gender_le = pickle.load(open("gender_encoder.pkl", "rb"))
+education_le = pickle.load(open("education_encoder.pkl", "rb"))
+region_le = pickle.load(open("region_encoder.pkl", "rb"))
+loyalty_le = pickle.load(open("loyalty_encoder.pkl", "rb"))
+freq_le = pickle.load(open("frequency_encoder.pkl", "rb"))
+prod_cat_le = pickle.load(open("product_category_encoder.pkl", "rb"))
 
-# Load LabelEncoders for categorical columns
-gender_le = joblib.load("gender_encoder.pkl")
-education_le = joblib.load("education_encoder.pkl")
-region_le = joblib.load("region_encoder.pkl")
-loyalty_le = joblib.load("loyalty_encoder.pkl")
-freq_le = joblib.load("purchase_frequency_encoder.pkl")
-prod_cat_le = joblib.load("product_category_encoder.pkl")
+st.title("🛒 Customer Purchase Behavior Prediction App")
+st.write("Predict customer purchase behavior based on demographic and behavioral factors.")
 
-st.set_page_config(page_title="Customer Purchase Prediction", layout="wide")
+# ------------------------------------------------------------
+# User-Friendly Dropdowns with Internal Mappings
+# ------------------------------------------------------------
 
-# ------------------------------
-# Load dataset for dropdowns and visualizations
-# ------------------------------
-df = pd.read_csv("customer_data.csv")
+gender_options = {"Male": gender_le.classes_[0], "Female": gender_le.classes_[1]}
+education_options = {label: label for label in education_le.classes_}
+region_options = {label: label for label in region_le.classes_}
+loyalty_options = {label: label for label in loyalty_le.classes_}
+freq_options = {label: label for label in freq_le.classes_}
+prod_cat_options = {label: label for label in prod_cat_le.classes_}
 
-# Map encoded classes to friendly names if needed
-gender_options = ["Male", "Female"]
-education_options = ["High School", "Bachelor", "Master", "PhD"]
-region_options = ["North", "South", "East", "West"]
-loyalty_options = ["Bronze", "Silver", "Gold", "Platinum"]
-freq_options = ["Low", "Medium", "High"]
-product_options = ["Books", "Clothing", "Food", "Electronics", "Home", "Beauty", "Health"]
-
-# ------------------------------
 # Sidebar Inputs
-# ------------------------------
-st.sidebar.header("Input Features")
+st.sidebar.header("Enter Customer Details")
 
-age = st.sidebar.number_input("Age", min_value=0, max_value=100, value=30)
-income = st.sidebar.number_input("Income", min_value=0, value=50000)
+gender_input = st.sidebar.selectbox("Gender", list(gender_options.keys()))
+age_input = st.sidebar.number_input("Age", min_value=10, max_value=100, value=25)
+income_input = st.sidebar.number_input("Annual Income", min_value=1000, value=30000)
+education_input = st.sidebar.selectbox("Education Level", list(education_options.keys()))
+region_input = st.sidebar.selectbox("Region", list(region_options.keys()))
+loyalty_input = st.sidebar.selectbox("Loyalty Status", list(loyalty_options.keys()))
+freq_input = st.sidebar.selectbox("Purchase Frequency", list(freq_options.keys()))
 promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, value=1)
-satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
+product_input = st.sidebar.selectbox("Product Category", list(prod_cat_options.keys()))
 
-gender_input = st.sidebar.selectbox("Gender", gender_options)
-education_input = st.sidebar.selectbox("Education", education_options)
-region_input = st.sidebar.selectbox("Region", region_options)
-loyalty_input = st.sidebar.selectbox("Loyalty Status", loyalty_options)
-freq_input = st.sidebar.selectbox("Purchase Frequency", freq_options)
-product_input = st.sidebar.selectbox("Product Category", product_options)
+# ------------------------------------------------------------
+# Transform Friendly Inputs to Encoded Values
+# ------------------------------------------------------------
+try:
+    gender_val = gender_le.transform([gender_options[gender_input]])[0]
+    education_val = education_le.transform([education_options[education_input]])[0]
+    region_val = region_le.transform([region_options[region_input]])[0]
+    loyalty_val = loyalty_le.transform([loyalty_options[loyalty_input]])[0]
+    freq_val = freq_le.transform([freq_options[freq_input]])[0]
+    prod_cat_val = prod_cat_le.transform([prod_cat_options[product_input]])[0]
+except Exception as e:
+    st.error(f"⚠️ Error while transforming inputs: {e}")
+    st.stop()
 
-# ------------------------------
-# Encode categorical inputs
-# ------------------------------
-input_df = pd.DataFrame({
-    'age': [age],
-    'gender': [gender_le.transform([gender_input])[0]],
-    'income': [income],
-    'education': [education_le.transform([education_input])[0]],
-    'region': [region_le.transform([region_input])[0]],
-    'loyalty_status': [loyalty_le.transform([loyalty_input])[0]],
-    'purchase_frequency': [freq_le.transform([freq_input])[0]],
+# ------------------------------------------------------------
+# Prepare Input DataFrame
+# ------------------------------------------------------------
+input_data = pd.DataFrame({
+    'gender': [gender_val],
+    'age': [age_input],
+    'income': [income_input],
+    'education': [education_val],
+    'region': [region_val],
+    'loyalty_status': [loyalty_val],
+    'purchase_frequency': [freq_val],
     'promotion_usage': [promotion_usage],
-    'satisfaction_score': [satisfaction_score],
-    'product_category': [prod_cat_le.transform([product_input])[0]]
+    'product_category': [prod_cat_val]
 })
 
-# ------------------------------
-# Prediction
-# ------------------------------
-if st.button("Predict Purchase Amount"):
-    prediction = model.predict(input_df)[0]
-    st.success(f"Predicted Purchase Amount: ₹{prediction:.2f}")
+st.subheader("📋 Input Summary")
+st.write(input_data)
 
-# ------------------------------
-# Visualizations
-# ------------------------------
-st.subheader("Model Insights")
-
-# Scatter plots
-fig1, ax1 = plt.subplots()
-sns.scatterplot(x=df["age"], y=df["purchase_amount"], ax=ax1)
-ax1.set_title("Age vs Purchase Amount")
-st.pyplot(fig1)
-
-fig2, ax2 = plt.subplots()
-sns.scatterplot(x=df["income"], y=df["purchase_amount"], ax=ax2)
-ax2.set_title("Income vs Purchase Amount")
-st.pyplot(fig2)
-
-# Feature Importance
-if hasattr(model, "feature_importances_"):
-    fi = pd.Series(model.feature_importances_, index=input_df.columns)
-    fig3, ax3 = plt.subplots()
-    fi.sort_values().plot(kind='barh', ax=ax3)
-    ax3.set_title("Feature Importance")
-    st.pyplot(fig3)
-
-# Residuals Distribution
-y_true = df["purchase_amount"].values
-X_df = df[input_df.columns].copy()
-# Encode categorical columns in X_df for prediction
-for col, le in zip(['gender','education','region','loyalty_status','purchase_frequency','product_category'],
-                   [gender_le, education_le, region_le, loyalty_le, freq_le, prod_cat_le]):
-    X_df[col] = le.transform(X_df[col])
-y_pred_all = model.predict(X_df)
-residuals = y_true - y_pred_all
-
-fig4, ax4 = plt.subplots()
-sns.histplot(residuals, bins=30, kde=True, ax=ax4)
-ax4.set_title("Residuals Distribution")
-st.pyplot(fig4)
-
-# ------------------------------
-# Footer
-# ------------------------------
-st.markdown("---")
-st.markdown("Made by Khushi Yadav")
+# ------------------------------------------------------------
+# Make Prediction
+# ------------------------------------------------------------
+if st.button("Predict Purchase Behavior"):
+    prediction = model.predict(input_data)[0]
+    st.success(f"🧠 Predicted Purchase Behavior: **{prediction}**")
