@@ -46,4 +46,89 @@ st.sidebar.header("Input Features")
 
 age = st.sidebar.number_input("Age", min_value=0, max_value=100, value=30)
 income = st.sidebar.number_input("Income", min_value=0, value=50000)
-promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, va_
+promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, value=1)
+satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
+
+# Dropdowns using friendly names
+gender = st.sidebar.selectbox("Gender", ["Male", "Female"])
+education = st.sidebar.selectbox("Education", ["High School", "Bachelor", "Master", "PhD"])
+region = st.sidebar.selectbox("Region", ["North", "South", "East", "West"])
+loyalty_status = st.sidebar.selectbox("Loyalty Status", ["Bronze", "Silver", "Gold", "Platinum"])
+purchase_frequency = st.sidebar.selectbox("Purchase Frequency", ["Low", "Medium", "High"])
+product_category = st.sidebar.selectbox("Product Category", ["Books", "Clothing", "Food", "Electronics", "Home", "Beauty", "Health"])
+
+# ------------------------------
+# Prepare input DataFrame
+# ------------------------------
+input_df = pd.DataFrame([[age, gender, income, education, region, loyalty_status,
+                          purchase_frequency, promotion_usage, satisfaction_score,
+                          product_category]],
+                        columns=['age', 'gender', 'income', 'education', 'region',
+                                 'loyalty_status', 'purchase_frequency', 'promotion_usage',
+                                 'satisfaction_score', 'product_category'])
+
+# ------------------------------
+# Encode categorical features safely
+# ------------------------------
+for col, le in encoders.items():
+    # Replace any unseen category with first class
+    input_df[col] = input_df[col].apply(lambda x: x if x in le.classes_ else le.classes_[0])
+    input_df[col] = le.transform(input_df[col])
+
+# ------------------------------
+# Prediction
+# ------------------------------
+if st.button("Predict Purchase Amount"):
+    prediction = model.predict(input_df)[0]
+    st.success(f"Predicted Purchase Amount: ₹{prediction:.2f}")
+
+# ------------------------------
+# Visualizations
+# ------------------------------
+st.subheader("📊 Model Insights")
+
+# Scatter plots
+fig1, ax1 = plt.subplots()
+sns.scatterplot(x=df["age"], y=df["purchase_amount"], ax=ax1)
+ax1.set_title("Age vs Purchase Amount")
+st.pyplot(fig1)
+
+fig2, ax2 = plt.subplots()
+sns.scatterplot(x=df["income"], y=df["purchase_amount"], ax=ax2)
+ax2.set_title("Income vs Purchase Amount")
+st.pyplot(fig2)
+
+# Feature Importance
+if hasattr(model, "feature_importances_"):
+    fi = pd.Series(model.feature_importances_, index=input_df.columns)
+    fig3, ax3 = plt.subplots()
+    fi.sort_values().plot(kind='barh', ax=ax3)
+    ax3.set_title("Feature Importance")
+    st.pyplot(fig3)
+
+# Residuals
+model_features = ['age', 'gender', 'income', 'education', 'region',
+                  'loyalty_status', 'purchase_frequency', 'promotion_usage',
+                  'satisfaction_score', 'product_category']
+
+X_df = df[model_features].copy()
+
+# Encode categorical safely for full dataset
+for col, le in encoders.items():
+    X_df[col] = X_df[col].apply(lambda x: x if x in le.classes_ else le.classes_[0])
+    X_df[col] = le.transform(X_df[col])
+
+y_true = df["purchase_amount"].values
+y_pred_all = model.predict(X_df)
+residuals = y_true - y_pred_all
+
+fig4, ax4 = plt.subplots()
+sns.histplot(residuals, bins=30, kde=True, ax=ax4)
+ax4.set_title("Residuals Distribution")
+st.pyplot(fig4)
+
+# ------------------------------
+# Footer
+# ------------------------------
+st.markdown("---")
+st.markdown("Made by Khushi Yadav")
