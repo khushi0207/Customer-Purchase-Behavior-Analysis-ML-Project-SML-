@@ -15,8 +15,8 @@ gender_le = joblib.load("gender_encoder.pkl")
 education_le = joblib.load("education_encoder.pkl")
 region_le = joblib.load("region_encoder.pkl")
 loyalty_le = joblib.load("loyalty_encoder.pkl")
-freq_le = joblib.load("frequency_encoder.pkl")
-category_le = joblib.load("category_encoder.pkl")
+freq_le = joblib.load("purchase_frequency_encoder.pkl")
+category_le = joblib.load("product_category_encoder.pkl")
 
 st.set_page_config(page_title="Customer Purchase Prediction", layout="wide")
 
