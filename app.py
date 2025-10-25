@@ -15,6 +15,24 @@ st.title("🧠 Customer Purchase Behavior Prediction")
 st.markdown("Predict the **purchase amount** based on customer demographics and preferences.")
 
 # ------------------------------
+# Check for Required Files
+# ------------------------------
+required_files = [
+    "xgb_purchase_model.pkl",
+    "gender_encoder.pkl",
+    "education_encoder.pkl",
+    "region_encoder.pkl",
+    "loyalty_encoder.pkl",
+    "purchase_frequency_encoder.pkl",
+    "product_category_encoder.pkl",
+]
+
+missing_files = [f for f in required_files if not os.path.exists(f)]
+if missing_files:
+    st.error(f"⚠️ Missing files: {', '.join(missing_files)}. Please upload them before running the app.")
+    st.stop()
+
+# ------------------------------
 # Load Model and Encoders
 # ------------------------------
 model = joblib.load("xgb_purchase_model.pkl")
@@ -26,17 +44,7 @@ freq_le = joblib.load("purchase_frequency_encoder.pkl")
 prod_cat_le = joblib.load("product_category_encoder.pkl")
 
 # ------------------------------
-# User-friendly category mappings
-# (These are what the user sees)
-# ------------------------------
-gender_options = ["Male", "Female"]
-region_options = ["North", "South", "East", "West", "Central"]
-education_options = ["High School", "Graduate", "Post Graduate", "PhD"]
-loyalty_options = ["Bronze", "Silver", "Gold", "Platinum"]
-product_category_options = ["Electronics", "Clothing", "Beauty", "Home", "Sports"]
-
-# ------------------------------
-# Sidebar Inputs
+# Sidebar Inputs (User-Friendly)
 # ------------------------------
 st.sidebar.header("🎛️ Input Customer Details")
 
@@ -45,27 +53,31 @@ income = st.sidebar.number_input("Income (₹)", min_value=0, value=50000)
 promotion_usage_input = st.sidebar.selectbox("Promotion Usage", ["Yes", "No"])
 satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
 
-gender_input = st.sidebar.selectbox("Gender", gender_options)
-education_input = st.sidebar.selectbox("Education Level", education_options)
-region_input = st.sidebar.selectbox("Region", region_options)
-loyalty_input = st.sidebar.selectbox("Loyalty Status", loyalty_options)
+gender_input = st.sidebar.selectbox("Gender", list(gender_le.classes_))
+education_input = st.sidebar.selectbox("Education Level", list(education_le.classes_))
+region_input = st.sidebar.selectbox("Region", list(region_le.classes_))
+loyalty_input = st.sidebar.selectbox("Loyalty Status", list(loyalty_le.classes_))
 freq_input = st.sidebar.selectbox("Purchase Frequency", list(freq_le.classes_))
-prod_cat_input = st.sidebar.selectbox("Product Category", product_category_options)
+prod_cat_input = st.sidebar.selectbox("Product Category", list(prod_cat_le.classes_))
 
+# Convert Promotion Usage to numeric (1 = Yes, 0 = No)
 promotion_usage = 1 if promotion_usage_input == "Yes" else 0
 
 # ------------------------------
-# Helper: safely encode text using the fitted LabelEncoder
+# Helper Function for Encoding
 # ------------------------------
 def safe_encode(encoder, value):
+    """Safely encode user input using LabelEncoder."""
     try:
+        if isinstance(value, np.str_):
+            value = str(value)
         return int(encoder.transform([value])[0])
-    except:
-        st.error(f"⚠️ Invalid input: '{value}'. Must be one of: {', '.join(encoder.classes_)}")
+    except Exception:
+        st.error(f"⚠️ '{value}' is not a valid option. Choose from: {', '.join(encoder.classes_)}")
         st.stop()
 
 # ------------------------------
-# Prepare input dataframe
+# Prepare Input Data
 # ------------------------------
 input_df = pd.DataFrame({
     "age": [age],
@@ -88,20 +100,21 @@ if st.button("🎯 Predict Purchase Amount"):
 
     st.success(f"💰 **Predicted Purchase Amount:** ₹{prediction:.2f}")
 
-    st.markdown("### 🧍 Customer Summary")
+    # Display a friendly summary
+    st.markdown("### 🧍 Customer Persona Summary")
     st.info(f"""
-    👩‍🦰 Gender: {gender_input}  
-    🎓 Education: {education_input}  
-    🌍 Region: {region_input}  
-    💎 Loyalty: {loyalty_input}  
-    🛍️ Product Category: {prod_cat_input}  
-    💸 Income: ₹{income}  
-    🧾 Promotion Usage: {promotion_usage_input}  
-    😊 Satisfaction: {satisfaction_score}/10  
+    **Gender:** {gender_input}  
+    **Age:** {age}  
+    **Region:** {region_input}  
+    **Education:** {education_input}  
+    **Loyalty Status:** {loyalty_input}  
+    **Purchase Frequency:** {freq_input}  
+    **Promotion Usage:** {promotion_usage_input}  
+    **Satisfaction Score:** {satisfaction_score}/10  
     """)
 
 # ------------------------------
-# Optional Visualizations
+# Visualization Section (Optional)
 # ------------------------------
 if os.path.exists("customer_data.csv"):
     df = pd.read_csv("customer_data.csv")
@@ -110,6 +123,7 @@ if os.path.exists("customer_data.csv"):
         st.subheader("📊 Model Insights")
 
         col1, col2 = st.columns(2)
+
         with col1:
             fig1, ax1 = plt.subplots()
             sns.scatterplot(x=df["age"], y=df["purchase_amount"], ax=ax1)
@@ -122,6 +136,7 @@ if os.path.exists("customer_data.csv"):
             ax2.set_title("Income vs Purchase Amount")
             st.pyplot(fig2)
 
+        # Feature Importance
         if hasattr(model, "feature_importances_"):
             fi = pd.Series(model.feature_importances_, index=input_df.columns)
             fig3, ax3 = plt.subplots()
@@ -133,5 +148,8 @@ if os.path.exists("customer_data.csv"):
 else:
     st.info("ℹ️ Dataset not found. Visualizations skipped.")
 
+# ------------------------------
+# Footer
+# ------------------------------
 st.markdown("---")
-st.markdown("Developed by Khushi Yadav")
+st.markdown("👩🏻‍💻 **Developed by Khushi Yadav** | Data Science Enthusiast 🌸")
