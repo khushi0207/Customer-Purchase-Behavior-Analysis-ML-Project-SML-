@@ -61,12 +61,12 @@ input_df = pd.DataFrame([[
 ])
 
 # Encode categorical features
-input_df['gender'] = gender_le.transform(input_df['gender'])
-input_df['education'] = education_le.transform(input_df['education'])
-input_df['region'] = region_le.transform(input_df['region'])
-input_df['loyalty_status'] = loyalty_le.transform(input_df['loyalty_status'])
+input_df['gender'] = gender_le.transform(input_df['gender']).str.capitalize()
+input_df['education'] = education_le.transform(input_df['education']).str.capitalize()
+input_df['region'] = region_le.transform(input_df['region']).str.capitalize()
+input_df['loyalty_status'] = loyalty_le.transform(input_df['loyalty_status']).str.capitalize()
 input_df['purchase_frequency'] = freq_le.transform(input_df['purchase_frequency'])
-input_df['product_category'] = category_le.transform(input_df['product_category'])
+input_df['product_category'] = category_le.transform(input_df['product_category']).str.capitalize()
 
 # ------------------------------
 # Prediction
