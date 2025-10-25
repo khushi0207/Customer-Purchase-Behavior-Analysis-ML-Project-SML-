@@ -34,13 +34,13 @@ income = st.sidebar.number_input("Income", min_value=0, value=50000)
 promotion_usage = st.sidebar.number_input("Promotion Usage", min_value=0, value=1)
 satisfaction_score = st.sidebar.slider("Satisfaction Score", 0, 10, 5)
 
-# Friendly string options
-gender = st.sidebar.selectbox("Gender", ["Male", "Female"])
-education = st.sidebar.selectbox("Education", df['education'].unique())
-region = st.sidebar.selectbox("Region", df['region'].unique())
-loyalty_status = st.sidebar.selectbox("Loyalty Status", df['loyalty_status'].unique())
-purchase_frequency = st.sidebar.selectbox("Purchase Frequency", df['purchase_frequency'].unique())
-product_category = st.sidebar.selectbox("Product Category", df['product_category'].unique())
+# Friendly string dropdowns
+gender = st.sidebar.selectbox("Gender", list(gender_le.classes_))
+education = st.sidebar.selectbox("Education", list(education_le.classes_))
+region = st.sidebar.selectbox("Region", list(region_le.classes_))
+loyalty_status = st.sidebar.selectbox("Loyalty Status", list(loyalty_le.classes_))
+purchase_frequency = st.sidebar.selectbox("Purchase Frequency", list(freq_le.classes_))
+product_category = st.sidebar.selectbox("Product Category", list(prod_cat_le.classes_))
 
 # ------------------------------
 # Prepare input DataFrame
@@ -53,8 +53,18 @@ input_df = pd.DataFrame([[age, gender, income, education, region, loyalty_status
                                  'satisfaction_score', 'product_category'])
 
 # ------------------------------
-# Encode categorical features safely
+# Encode categorical features automatically
 # ------------------------------
+def encode_column(df, col, le):
+    # Transform the value
+    try:
+        df[col] = le.transform(df[col])
+    except ValueError:
+        # If the input is not in the classes_, pick the closest match or stop
+        st.error(f"Invalid input for '{col}'. Choose from: {', '.join(le.classes_)}")
+        st.stop()
+    return df
+
 encoders = {
     'gender': gender_le,
     'education': education_le,
@@ -65,11 +75,7 @@ encoders = {
 }
 
 for col, le in encoders.items():
-    try:
-        input_df[col] = le.transform(input_df[col])
-    except ValueError:
-        st.error(f"Invalid input for '{col}'. Choose from: {', '.join(le.classes_)}")
-        st.stop()
+    input_df = encode_column(input_df, col, le)
 
 # ------------------------------
 # Prediction
@@ -87,7 +93,7 @@ model_features = ['age', 'gender', 'income', 'education', 'region',
                   'loyalty_status', 'purchase_frequency', 'promotion_usage',
                   'satisfaction_score', 'product_category']
 
-# Encode dataset categorical columns for predictions
+# Encode full dataset for predictions
 X_df = df[model_features].copy()
 for col, le in encoders.items():
     X_df[col] = le.transform(X_df[col].astype(str))
