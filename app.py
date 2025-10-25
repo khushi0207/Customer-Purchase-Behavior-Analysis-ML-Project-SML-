@@ -19,17 +19,11 @@ prod_cat_le = joblib.load("product_category_encoder.pkl")
 st.set_page_config(page_title="Customer Purchase Prediction", layout="wide")
 
 # ------------------------------
-# Title and Description
-# ------------------------------
-st.title("🛒 Customer Purchase Prediction")
-st.markdown("Predict the purchase amount of a customer based on their features.")
-
-# ------------------------------
 # Load dataset for categories
 # ------------------------------
 df = pd.read_csv("customer_data.csv")
 
-# Create dropdowns from dataset to avoid invalid inputs
+# Dropdown options from dataset
 gender_options = df['gender'].unique().tolist()
 education_options = df['education'].unique().tolist()
 region_options = df['region'].unique().tolist()
@@ -63,7 +57,7 @@ input_df = pd.DataFrame([[age, gender, income, education, region, loyalty_status
                                  'satisfaction_score', 'product_category'])
 
 # ------------------------------
-# Encode categorical features
+# Encode categorical features safely
 # ------------------------------
 encoders = {
     'gender': gender_le,
@@ -75,7 +69,11 @@ encoders = {
 }
 
 for col, le in encoders.items():
-    input_df[col] = le.transform(input_df[col])
+    val = str(input_df[col].values[0]).title()  # normalize string
+    if val not in le.classes_:
+        st.error(f"⚠️ Invalid input for '{col}'. Choose from: {', '.join(map(str, le.classes_))}")
+        st.stop()
+    input_df[col] = le.transform([val])[0]  # single value transform
 
 # ------------------------------
 # Prediction
@@ -87,7 +85,7 @@ if st.button("Predict Purchase Amount"):
 # ------------------------------
 # Optional Visualizations
 # ------------------------------
-st.subheader(" Model Insights")
+st.subheader("📊 Model Insights")
 
 # Scatter plots
 fig1, ax1 = plt.subplots()
